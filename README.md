@@ -1,6 +1,6 @@
 # GS-BRIDLE
 
-Code for “Improving Self-Supervised Audio Representation Learning via Gumbel-Softmax-Based Residual Vector Quantization” ([journal, year], [DOI]).
+Code for “Improving Self-Supervised Audio Representation Learning via Gumbel-Softmax-Based Residual Vector Quantization”.
 
 GS-BRIDLE keeps the architecture and training procedure of [BRIDLE](https://arxiv.org/abs/2502.02118) and changes only how its tokenizer selects codes: at every RVQ stage, the nearest-code selection with the identity straight-through estimator (STE) is replaced by the **straight-through Gumbel-Softmax estimator** with exponential temperature annealing (τ: 2.0 → 0.5).
 
