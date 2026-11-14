@@ -97,6 +97,10 @@ def get_args_parser():
     parser.add_argument('--init_weight_multiplier', default=1., type=float, help='initial std of codebook weights')
     parser.add_argument('--kmeans_init', action='store_true', help='kmeans init each codebook')
     parser.add_argument('--soft_code', default=1, type=int, help='number of codes mapped to each input')
+    parser.add_argument('--use_gumbel', action='store_true', help='Gumbel-Softmax code selection (Sec. 3.2)')
+    parser.add_argument('--gumbel_tau', default=2.0, type=float, help='initial temperature tau0')
+    parser.add_argument('--gumbel_min_tau', default=0.5, type=float, help='final temperature tau_min')
+    parser.add_argument('--gumbel_schedule', default='exp', choices=['exp', 'linear', 'fixed'])
 
     # Optimizer parameters
     parser.add_argument('--weight_decay', type=float, default=0.05, help='weight decay (default: 0.05)')
@@ -256,6 +260,9 @@ def main(args):
                                             kmeans_init=args.kmeans_init, soft_code = args.soft_code,
                                             no_shift=args.no_shift,
                                             )
+        if args.use_gumbel:
+            from model.gs_quantizers import enable_gumbel
+            enable_gumbel(tokenizer.quantizer, tau0=args.gumbel_tau, tau_min=args.gumbel_min_tau, schedule=args.gumbel_schedule)
     elif args.dataset == 'k400':
         encoder_decoder = video_encoder_decoder.__dict__[args.model](decoder_num_classes=num_tokens, 
                                             drop_path_rate=args.drop_path, decoder_depth=args.decoder_depth)
@@ -297,7 +304,7 @@ def main(args):
 
     # load previous phase training for iter2+ or training tokenizer
     if args.prev_phase:
-        checkpoint = torch.load(args.prev_phase, map_location='cpu')
+        checkpoint = torch.load(args.prev_phase, map_location='cpu', weights_only=False)
         print("Load pre-trained checkpoint from: %s" % args.prev_phase)
         checkpoint_model = checkpoint['model']
         # checkpoint_model = {k: v for k, v in checkpoint_model.items() if
@@ -365,9 +372,16 @@ def main(args):
     train_fn = train_one_epoch_video if args.dataset == 'k400' else train_one_epoch
 
     start_time = time.time()
+    if args.use_gumbel and not args.train_encoder:
+        from model.gs_quantizers import set_gumbel_total_steps
+        set_gumbel_total_steps(model_without_ddp.tokenizer.quantizer, args.epochs * len(data_loader_train))
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
+        if args.use_gumbel and not args.train_encoder:
+            from model.gs_quantizers import gumbel_tau
+            _t, _s = gumbel_tau(model_without_ddp.tokenizer.quantizer)
+            print(f'Gumbel tau at epoch start: {_t:.4f} (step {_s})')
         train_stats = train_fn(
             model, data_loader_train,
             optimizer, device, epoch, loss_scaler,

@@ -256,7 +256,7 @@ def main(args):
     # load model for evaluation
     assert args.prev_phase is not None
 
-    checkpoint = torch.load(args.prev_phase, map_location='cpu')
+    checkpoint = torch.load(args.prev_phase, map_location='cpu', weights_only=False)
     print("Load pre-trained checkpoint from: %s" % args.prev_phase)
     checkpoint_model = checkpoint['model']
     # load pre-trained model

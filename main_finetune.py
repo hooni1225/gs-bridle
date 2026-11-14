@@ -218,6 +218,7 @@ class PatchEmbed_new(nn.Module):
         return x
 
 def main(args):
+    global_rank = 0
     misc.init_distributed_mode(args)
 
     print('job dir: {}'.format(os.path.dirname(os.path.realpath(__file__))))
@@ -401,7 +402,7 @@ def main(args):
         model.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, emb_dim), requires_grad=False)  # fixed sin-cos embedding
 
     if args.finetune:
-        checkpoint = torch.load(args.finetune, map_location='cpu')
+        checkpoint = torch.load(args.finetune, map_location='cpu', weights_only=False)
         print("Load pre-trained checkpoint from: %s" % args.finetune)
         checkpoint_model = checkpoint['model']
         state_dict = model.state_dict()
@@ -494,7 +495,7 @@ def main(args):
 
     if args.use_soft:
         criterion = SoftTargetCrossEntropy()
-    elif args.criterion == 'bce':
+    elif args.multilabel:
         criterion = nn.BCEWithLogitsLoss()
     else:
         criterion = nn.CrossEntropyLoss()

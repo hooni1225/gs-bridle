@@ -59,10 +59,10 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         samples = samples.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True)
 
-        if args.criterion == 'bce' and not args.audio_exp:
+        if args.multilabel and not args.audio_exp:
             # convert image and video labels to one hot
             targets = _get_one_hot_labels(targets, num_classes=args.nb_classes)
-        elif args.criterion == 'ce' and args.audio_exp:
+        elif not args.multilabel and args.audio_exp:
             # convert audio labels to class num
             targets = torch.argmax(targets, dim=-1)
 

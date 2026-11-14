@@ -129,7 +129,7 @@ class VQEmbedding(nn.Embedding):
         zero_mask = (cluster_size == 0)
         bins = cluster_size.masked_fill(zero_mask, 1.)
         embed_sum = vectors.t() @ one_hot_idxs
-        dist.all_reduce(embed_sum)
+        if dist.is_initialized(): dist.all_reduce(embed_sum)
 
         embed_normalized = (embed_sum / bins.unsqueeze(0)).t()
         embed_normalized = l2norm(embed_normalized)
@@ -184,7 +184,7 @@ class VQEmbedding(nn.Embedding):
             one_hot_idxs = F.one_hot(idxs, n_embed).type(vectors.dtype)
         
         cluster_size = one_hot_idxs.sum(0)
-        dist.all_reduce(cluster_size)
+        if dist.is_initialized(): dist.all_reduce(cluster_size)
 
         return cluster_size, one_hot_idxs
 

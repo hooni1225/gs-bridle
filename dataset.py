@@ -12,6 +12,7 @@
 import csv, os, sys
 import json
 import torchaudio
+import soundfile as sf
 import numpy as np
 import torch
 import torch.nn.functional
@@ -181,7 +182,8 @@ class AudiosetDataset(Dataset):
 
     def _wav2fbank(self, filename, filename2=None):
         if filename2 == None:
-            waveform, sr = torchaudio.load(filename)
+            waveform, sr = sf.read(filename, dtype='float32')
+            waveform = torch.FloatTensor(waveform).unsqueeze(0) if waveform.ndim == 1 else torch.FloatTensor(waveform.T)
             waveform = waveform - waveform.mean()
             if self.roll_mag_aug:
                 waveform = self._roll_mag_aug(waveform)

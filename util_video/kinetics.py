@@ -11,7 +11,7 @@
 import os
 import csv
 import numpy as np
-from numpy.lib.function_base import disp
+# from numpy.lib.function_base import disp  # unused; removed in NumPy 2
 import torch
 import decord
 from PIL import Image
